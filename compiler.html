@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SAP-1 Compiler — 16-Byte ROM</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --ink:#2a2d34; --muted:#677088; --paper:#fff; --panel:#fff; --border:#e8ecf3;
+    --brandA:#0ea5a6; --brandB:#ff7a59;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font:16px/1.6 var(--sans); color:var(--ink);
+    background:
+      radial-gradient(1200px 800px at 10% -10%,#e6f8ff 0%,transparent 60%),
+      radial-gradient(1000px 700px at 120% 120%,#ffe8ea 0%,transparent 60%),
+      var(--bg);
+    display:flex; align-items:flex-start; justify-content:center; padding:40px 14px;
+  }
+  .wrap{width:min(1040px,100%); background:var(--panel); border:1px solid var(--border);
+    border-radius:20px; box-shadow:0 10px 30px rgba(20,25,40,.06),0 1px 0 rgba(255,255,255,.6) inset; overflow:hidden}
+  .bar{display:flex; align-items:center; justify-content:space-between; padding:18px 22px;
+    background:linear-gradient(90deg,var(--brandA),var(--brandB)); color:#fff}
+  .brand{font-weight:800; letter-spacing:.3px; font-size:20px; display:flex; gap:10px; align-items:center}
+  .badge{width:26px; height:26px; border-radius:8px; background:#fff2; display:grid; place-items:center; box-shadow:0 2px 10px #0002}
+  .content{padding:22px; display:grid; gap:18px}
+  .card{border:1px solid var(--border); border-radius:14px; background:var(--paper); padding:16px; box-shadow:0 2px 10px rgba(20,25,40,.04)}
+  .card h2{margin:0 0 8px 0; font-size:16px}
+  .hint{color:var(--muted); font-size:13px}
+  .grid{display:grid; gap:16px}
+  textarea{width:100%; min-height:260px; resize:vertical; border:2px dashed #dde3ef; border-radius:12px; padding:14px 16px; background:#fbfcff; color:var(--ink); font-family:var(--mono); font-size:14px; outline:none}
+  textarea:focus{border-color:var(--brandA); background:#fff}
+  input[type=text], input[type=number], select{width:100%; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; background:#fff; font-family:var(--mono)}
+  .actions{display:flex; gap:12px; flex-wrap:wrap}
+  .btn{appearance:none; border:none; cursor:pointer; padding:12px 16px; border-radius:999px; font-weight:700; box-shadow:0 6px 16px rgba(20,25,40,.08)}
+  .btn.primary{background:linear-gradient(135deg,var(--brandA),var(--brandB)); color:#fff}
+  .btn.secondary{background:#fff; border:1.5px solid var(--border); color:var(--ink)}
+  .errors{margin-top:10px; display:none; border:1px solid #ffd2e6; background:#fff1f7; color:#7a1048; padding:10px 12px; border-radius:10px; font-size:14px}
+  .meta{display:flex; gap:10px; align-items:center; flex-wrap:wrap; color:var(--muted); font-size:13px}
+  .chip{border:1px solid var(--border); padding:4px 8px; border-radius:999px; background:#f9fbff; font-family:var(--mono); font-size:12px}
+  .count{font-size:13px; color:#3a3f4b; margin-top:6px}
+  .footer{padding:14px 22px 20px; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:13px; border-top:1px solid var(--border)}
+  .tag{padding:6px 10px; border-radius:9px; background:linear-gradient(90deg,#fff4d6,#ffe8a3); color:#7a5a00; font-weight:700; border:1px solid #ffe39a}
+  @media (min-width:860px){.content{grid-template-columns:1.2fr .8fr; align-items:start}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand"><div class="badge">🧮</div>SAP-1 Compiler</div>
+      <small>16-byte ROM</small>
+    </div>
+
+    <div class="content">
+      <div class="grid">
+        <div class="card">
+          <h2>Assembly Code</h2>
+          <textarea id="code" placeholder="LDA 13
+ADD 14
+STA 15
+ROR 4
+HLT
+ORG 13
+DEC 51
+DEC 25">LDA 13
+ADD 14
+STA 15
+ROR 4
+HLT
+ORG 13
+DEC 51
+DEC 25</textarea>
+
+          <div class="meta" style="margin-top:10px">
+            <span>Supported:</span>
+            <span class="chip">NOP</span><span class="chip">LDA</span><span class="chip">ADD</span><span class="chip">SUB</span>
+            <span class="chip">STA</span><span class="chip">SHL</span><span class="chip">SHR</span><span class="chip">ROL</span>
+            <span class="chip">ROR</span><span class="chip">HLT</span>
+          </div>
+
+          <p class="hint" style="margin-top:8px">
+            ROM is fixed at <b>16 bytes</b> (addresses 0–15). Use <b>ORG</b> <code class="chip">address</code> (0–15); <b>DEC</b> <code class="chip">value</code> (0–255).
+            Most ops use a 4-bit operand (0–15). <b>NOP</b> and <b>HLT</b> are no-operand.
+          </p>
+
+          <div class="actions" style="margin-top:12px">
+            <button class="btn primary" id="assemble" type="button">Assemble</button>
+            <button class="btn secondary" id="copy" type="button">Copy Hex</button>
+          </div>
+
+          <div id="errors" class="errors"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Generated Hex Code</h2>
+          <input id="hexOut" type="text" readonly placeholder="Hex bytes will appear here…" />
+          <div id="byteCount" class="count"></div>
+          <p class="hint" style="margin-top:8px">Paste this into your Logisim ROM init.</p>
+        </div>
+
+        <div class="card">
+          <h2>Opcode Map</h2>
+          <p class="hint">Upper nibble = opcode, lower nibble = 4-bit operand.</p>
+          <div class="meta" style="margin-top:6px">
+            <span class="chip">NOP=0x0</span><span class="chip">LDA=0x1</span><span class="chip">ADD=0x2</span>
+            <span class="chip">SUB=0x3</span><span class="chip">STA=0x4</span><span class="chip">SHL=0x5</span>
+            <span class="chip">SHR=0x6</span><span class="chip">ROL=0x7</span><span class="chip">ROR=0x8</span><span class="chip">HLT=0xF</span>
+          </div>
+        </div>
+
+        <!-- NEW: Manual Byte Override -->
+        <div class="card">
+          <h2>Manual Byte Override</h2>
+          <p class="hint">Force a byte into the final ROM output without changing your assembly. Choose the value format. To place <code>0x33</code>, pick <b>HEX</b> (or type <code>0x33</code>). To place decimal <code>33</code>, pick <b>DEC</b>.</p>
+          <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
+            <input id="addrInput" type="number" min="0" max="15" placeholder="Address (0–15)" />
+            <input id="valInput" type="text" placeholder="Value" />
+            <select id="valMode" aria-label="Value format">
+              <option value="dec" selected>DEC</option>
+              <option value="hex">HEX</option>
+            </select>
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="btn secondary" id="applyOverride" type="button">Apply Override</button>
+            <button class="btn secondary" id="clearOverride" type="button">Clear</button>
+          </div>
+          <div id="ovrStatus" class="hint">No override active.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Client-side assembler • fast and offline</span>
+      <span class="tag">Made for SAP-1</span>
+    </div>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const ROM_LEN = 16;
+
+  const OPCODES = { NOP:0x0, LDA:0x1, ADD:0x2, SUB:0x3, STA:0x4, SHL:0x5, SHR:0x6, ROL:0x7, ROR:0x8, HLT:0xF };
+  const NO_OPERAND = new Set(['NOP','HLT']);
+
+  const $ = id => document.getElementById(id);
+  const codeEl = $('code'), outEl = $('hexOut'), errEl = $('errors'), countEl = $('byteCount');
+  const addrEl = $('addrInput'), valEl = $('valInput'), valMode = $('valMode');
+  const ovrStatus = $('ovrStatus');
+
+  // Store a single optional override {addr, value}, or null
+  const overrides = new Map();
+
+  function parseNum(t){
+    if(!t && t !== 0) return NaN;
+    t = String(t).trim().toUpperCase();
+    if(/^0X[0-9A-F]+$/.test(t)) return parseInt(t,16);
+    if(/^[0-9]+$/.test(t)) return parseInt(t,10);
+    return NaN;
+  }
+
+  function parseValue(str){
+    // If HEX mode, accept '33' or '0x33' and interpret as hex; if DEC, use decimal
+    if(valMode && valMode.value === 'hex'){
+      if(str === undefined || str === null) return NaN;
+      let s = String(str).trim().toUpperCase();
+      if(s.startsWith('0X')) s = s.slice(2);
+      if(!/^[0-9A-F]{1,2}$/.test(s)) return NaN;
+      return parseInt(s, 16);
+    }
+    // DEC mode (default)
+    return parseNum(str);
+  }
+
+  // Assemble to a 16-byte mem[] and collect errors
+  function assembleToMem(src){
+    const mem = new Array(ROM_LEN).fill(0x00); // fixed length
+    let pc = 0;
+    const errors = [];
+
+    src.split(/\r?\n/).forEach((raw, idx) => {
+      let line = raw.replace(/;.*/, '').replace(/\/\/.*/, '').trim();
+      if(!line) return;
+
+      const parts = line.toUpperCase().split(/\s+/);
+      const mn = parts[0];
+
+      if(mn === 'ORG'){
+        const addr = parseNum(parts[1]);
+        if(Number.isNaN(addr) || addr < 0 || addr >= ROM_LEN) errors.push(`Line ${idx+1}: ORG address must be 0..${ROM_LEN-1}`);
+        else pc = addr|0;
+        return;
+      }
+
+      if(mn === 'DEC'){
+        const val = parseNum(parts[1]);
+        if(Number.isNaN(val) || val < 0 || val > 255){ errors.push(`Line ${idx+1}: DEC value must be 0..255`); return; }
+        if(pc >= ROM_LEN){ errors.push(`Line ${idx+1}: Memory overflow at ${pc}`); return; }
+        mem[pc++] = val & 0xFF;
+        return;
+      }
+
+      if(!(mn in OPCODES)){ errors.push(`Line ${idx+1}: Unknown mnemonic '${mn}'`); return; }
+
+      if(NO_OPERAND.has(mn)){
+        if(pc >= ROM_LEN){ errors.push(`Line ${idx+1}: Memory overflow at ${pc}`); return; }
+        mem[pc++] = (OPCODES[mn] & 0xF) << 4;
+        return;
+      }
+
+      const opnd = parseNum(parts[1]);
+      if(Number.isNaN(opnd) || opnd < 0 || opnd > 15){ errors.push(`Line ${idx+1}: Operand for '${mn}' must be 0..15`); return; }
+      if(pc >= ROM_LEN){ errors.push(`Line ${idx+1}: Memory overflow at ${pc}`); return; }
+      mem[pc++] = ((OPCODES[mn] & 0xF) << 4) | (opnd & 0xF);
+    });
+
+    return { mem, errors };
+  }
+
+  function memToHex(mem){
+    return mem.map(b => b.toString(16).padStart(2,'0').toUpperCase());
+  }
+
+  function render(){
+    const { mem, errors } = assembleToMem(codeEl.value);
+
+    // Apply all overrides (multiple)
+    if (overrides && overrides.size){
+      for (const [addr, value] of overrides.entries()){
+        if(addr >= 0 && addr < ROM_LEN && value >= 0 && value <= 255){
+          mem[addr] = value & 0xFF;
+        }
+      }
+    }
+
+    const hexArray = memToHex(mem);
+    outEl.value = hexArray.join(' ');
+    countEl.textContent = `Byte count: ${hexArray.length} / ${ROM_LEN}`;
+
+    if(errors.length){
+      errEl.style.display = 'block';
+      errEl.innerHTML = '<b>Errors:</b><br>' + errors.map(s=>s.replace(/[&<]/g,m=>m==='&'?'&amp;':'&lt;')).join('<br>');
+    }else{
+      errEl.style.display = 'none';
+      errEl.textContent = '';
+    }
+  }
+
+  function applyOverride(){
+    const a = parseNum(addrEl.value);
+    const v = parseValue(valEl.value);
+
+    if(Number.isNaN(a) || a < 0 || a >= ROM_LEN){
+      ovrStatus.innerHTML = `❌ Address must be 0..${ROM_LEN-1}`;
+      ovrStatus.style.color = '#7a1048';
+      render();
+      return;
+    }
+    if(Number.isNaN(v) || v < 0 || v > 255){
+      if(valMode && valMode.value === 'hex'){
+        ovrStatus.innerHTML = '❌ Value must be 00..FF (hex)';
+      } else {
+        ovrStatus.innerHTML = '❌ Value must be 0..255 (decimal) or 0x.. (hex)';
+      }
+      ovrStatus.style.color = '#7a1048';
+      render();
+      return;
+    }
+
+    overrides.set(a|0, v|0);
+    const entries = [...overrides.entries()].sort((x,y)=>x[0]-y[0])
+      .map(([addr,val]) => `mem[${addr}]=${val} (0x${val.toString(16).toUpperCase().padStart(2,'0')})`);
+    ovrStatus.innerHTML = '✅ Overrides: ' + entries.join(' • ');
+    ovrStatus.style.color = 'var(--muted)';
+    render();
+  }
+
+  function clearOverride(){
+    overrides.clear();
+    addrEl.value = '';
+    valEl.value = '';
+    ovrStatus.textContent = 'No override active.';
+    ovrStatus.style.color = 'var(--muted)';
+    render();
+  }
+
+  $('assemble').addEventListener('click', render);
+  $('copy').addEventListener('click', async () => {
+    try{ await navigator.clipboard.writeText(outEl.value); } catch{ outEl.select(); document.execCommand('copy'); }
+  });
+  $('applyOverride').addEventListener('click', applyOverride);
+  $('clearOverride').addEventListener('click', clearOverride);
+
+  // Initial render
+  render();
+});
+</script>
+</body>
+</html>
